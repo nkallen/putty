@@ -1,0 +1,11 @@
+*.log
+lib_managed
+src_managed
+target
+dist
+project/boot
+.DS_Store
+#*#
+.#*
+java.hprof.txt
+*.swp
