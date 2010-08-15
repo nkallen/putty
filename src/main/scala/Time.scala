@@ -1,6 +1,7 @@
 import org.jboss.netty.channel._
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel.socket.nio.{NioServerSocketChannelFactory, NioClientSocketChannelFactory}
+import org.jboss.netty.handler.codec.replay.{ReplayingDecoder, VoidEnum}
 import org.jboss.netty.bootstrap.{ServerBootstrap, ClientBootstrap}
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
@@ -44,6 +45,11 @@ object TimeServer {
   }
 }
 
+class TimeDecoder extends ReplayingDecoder[VoidEnum] {
+  def decode(context: ChannelHandlerContext, channel: Channel, buffer: ChannelBuffer, state: VoidEnum) =
+    buffer.readBytes(4)
+}
+
 class TimeClientHandler extends SimpleChannelHandler {
   private val buf = ChannelBuffers.dynamicBuffer()
 
@@ -74,7 +80,9 @@ object TimeClient {
 
     bootstrap.setPipelineFactory(new ChannelPipelineFactory {
       def getPipeline =
-        Channels.pipeline(new TimeClientHandler)
+        Channels.pipeline(
+          new TimeDecoder,
+          new TimeClientHandler)
     })
 
     bootstrap.setOption("child.tcpNoDelay", true)
