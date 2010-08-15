@@ -45,11 +45,17 @@ object TimeServer {
 }
 
 class TimeClientHandler extends SimpleChannelHandler {
+  private val buf = ChannelBuffers.dynamicBuffer()
+
   override def messageReceived(context: ChannelHandlerContext, e: MessageEvent) {
-    val buf = e.getMessage.asInstanceOf[ChannelBuffer]
-    val currentTime = buf.readInt * 1000L
-    System.out.println(new Date(currentTime))
-    e.getChannel.close()
+    val m = e.getMessage.asInstanceOf[ChannelBuffer]
+    buf.writeBytes(m)
+
+    if (buf.readableBytes >= 4) {
+      val currentTime = buf.readInt * 1000L
+      System.out.println(new Date(currentTime))
+      e.getChannel.close()
+    }
   }
 
   override def exceptionCaught(context: ChannelHandlerContext, e: ExceptionEvent) {
@@ -60,9 +66,6 @@ class TimeClientHandler extends SimpleChannelHandler {
 
 object TimeClient {
   def main(args: Array[String]) {
-    val host = args(0)
-    val port = args(1).toInt
-
     val factory = new NioClientSocketChannelFactory(
       Executors.newCachedThreadPool,
       Executors.newCachedThreadPool)
@@ -76,6 +79,6 @@ object TimeClient {
 
     bootstrap.setOption("child.tcpNoDelay", true)
     bootstrap.setOption("child.keepAlive", true)
-    bootstrap.connect(new InetSocketAddress(host, port))
+    bootstrap.connect(new InetSocketAddress("localhost", 8080))
   }
 }
